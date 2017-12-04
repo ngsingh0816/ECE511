@@ -54,6 +54,8 @@
 #include "debug/Drain.hh"
 #include "sim/system.hh"
 
+#define PROFILE_NAME "profile.prof"
+
 using namespace std;
 using namespace Data;
 
@@ -223,6 +225,12 @@ DRAMCtrl::init()
             assert(columnsPerStripe <= columnsPerRowBuffer);
         }
     }
+
+    FILE* file = fopen(PROFILE_NAME, "r");
+    if (!file)
+        panic("Could not read profile file\n");
+    // TODO: read file data and send it to sepcialized cache
+    fclose(file);
 }
 
 void
