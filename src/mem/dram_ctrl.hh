@@ -63,6 +63,7 @@
 #include "enums/MemSched.hh"
 #include "enums/PageManage.hh"
 #include "mem/abstract_mem.hh"
+#include "mem/profile_cache.hh"
 #include "mem/qport.hh"
 #include "params/DRAMCtrl.hh"
 #include "sim/eventq.hh"
@@ -121,6 +122,11 @@ class DRAMCtrl : public AbstractMemory
         virtual AddrRangeList getAddrRanges() const;
 
     };
+
+    /**
+     * The Profile Cache used for storing and retrieving profiles.
+     */
+    ProfileCache profileCache;
 
     /**
      * Our incoming port, for a multi-ported controller add a crossbar

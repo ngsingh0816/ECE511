@@ -226,12 +226,16 @@ DRAMCtrl::init()
         }
     }
 
+    profileCache.init();
+
     FILE* file = fopen(PROFILE_NAME, "r");
     printf("Reading profile data from %s\n", PROFILE_NAME);
     if (!file)
         panic("Could not read profile file\n");
-    // TODO: read file data and send it to sepcialized cache
+    ProfileData data;
+    fread(&data, sizeof(data), 1, file);
     fclose(file);
+    profileCache.addProfile(&data);
 }
 
 void
