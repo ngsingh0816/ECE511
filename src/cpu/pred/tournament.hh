@@ -174,7 +174,7 @@ class TournamentBP : public BPredUnit
     /** Flag for invalid predictor index */
     static const int invalidPredictorIndex = -1;
     /** Local counters. */
-    std::vector<SatCounter> localCtrs;
+    std::vector<SatCounter> localCtrs[8];
 
     /** Number of counters in the local predictor. */
     unsigned localPredictorSize;
@@ -195,7 +195,7 @@ class TournamentBP : public BPredUnit
     unsigned localHistoryBits;
 
     /** Array of counters that make up the global predictor. */
-    std::vector<SatCounter> globalCtrs;
+    std::vector<SatCounter> globalCtrs[8];
 
     /** Number of entries in the global predictor. */
     unsigned globalPredictorSize;
@@ -225,7 +225,7 @@ class TournamentBP : public BPredUnit
     unsigned historyRegisterMask;
 
     /** Array of counters that make up the choice predictor. */
-    std::vector<SatCounter> choiceCtrs;
+    std::vector<SatCounter> choiceCtrs[8];
 
     /** Number of entries in the choice predictor. */
     unsigned choicePredictorSize;

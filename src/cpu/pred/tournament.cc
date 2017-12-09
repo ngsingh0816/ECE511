@@ -71,7 +71,10 @@ TournamentBP::TournamentBP(const TournamentBPParams *params)
     }
 
     //Set up the array of counters for the local predictor
-    localCtrs.resize(localPredictorSize);
+	for(int i = 0; i < 8; i++)
+	{
+		localCtrs[i].resize(localPredictorSize);
+	}
 
     for (int i = 0; i < localPredictorSize; ++i)
         localCtrs[i].setBits(localCtrBits);
@@ -89,7 +92,10 @@ TournamentBP::TournamentBP(const TournamentBPParams *params)
         localHistoryTable[i] = 0;
 
     //Setup the array of counters for the global predictor
-    globalCtrs.resize(globalPredictorSize);
+	for(int i = 0 ; i < 8; i++)
+	{
+		globalCtrs[i].resize(globalPredictorSize);
+	}
 
     for (int i = 0; i < globalPredictorSize; ++i)
         globalCtrs[i].setBits(globalCtrBits);
@@ -107,7 +113,10 @@ TournamentBP::TournamentBP(const TournamentBPParams *params)
     choiceHistoryMask = choicePredictorSize - 1;
 
     //Setup the array of counters for the choice predictor
-    choiceCtrs.resize(choicePredictorSize);
+	for(int i = 0; i < 8; i++)
+	{
+		choiceCtrs[i].resize(choicePredictorSize);
+	}
 
     for (int i = 0; i < choicePredictorSize; ++i)
         choiceCtrs[i].setBits(choiceCtrBits);
@@ -198,18 +207,19 @@ TournamentBP::lookup(ThreadID tid, Addr branch_addr, void * &bp_history)
     bool choice_prediction;
 
     //Lookup in the local predictor to get its branch prediction
+    int PHT_index = branch_addr >> 61;
     local_history_idx = calcLocHistIdx(branch_addr);
     local_predictor_idx = localHistoryTable[local_history_idx]
         & localPredictorMask;
-    local_prediction = localCtrs[local_predictor_idx].read() > localThreshold;
+    local_prediction = localCtrs[PHT_index][local_predictor_idx].read() > localThreshold;
 
     //Lookup in the global predictor to get its branch prediction
     global_prediction = globalThreshold <
-      globalCtrs[globalHistory[tid] & globalHistoryMask].read();
+      globalCtrs[PHT_index][globalHistory[tid] & globalHistoryMask].read();
 
     //Lookup in the choice predictor to see which one to use
     choice_prediction = choiceThreshold <
-      choiceCtrs[globalHistory[tid] & choiceHistoryMask].read();
+      choiceCtrs[PHT_index][globalHistory[tid] & choiceHistoryMask].read();
 
     // Create BPHistory and pass it back to be recorded.
     BPHistory *history = new BPHistory;
@@ -275,6 +285,7 @@ TournamentBP::update(ThreadID tid, Addr branch_addr, bool taken,
     unsigned local_history_idx = calcLocHistIdx(branch_addr);
 
     assert(local_history_idx < localHistoryTableSize);
+    int PHT_index = branch_addr >> 61;
 
     // Unconditional branches do not use local history.
     bool old_local_pred_valid = history->localHistory !=
@@ -313,9 +324,9 @@ TournamentBP::update(ThreadID tid, Addr branch_addr, bool taken,
          unsigned choice_predictor_idx =
            history->globalHistory & choiceHistoryMask;
          if (history->localPredTaken == taken) {
-             choiceCtrs[choice_predictor_idx].decrement();
+             choiceCtrs[PHT_index][choice_predictor_idx].decrement();
          } else if (history->globalPredTaken == taken) {
-             choiceCtrs[choice_predictor_idx].increment();
+             choiceCtrs[PHT_index][choice_predictor_idx].increment();
          }
     }
 
@@ -327,14 +338,14 @@ TournamentBP::update(ThreadID tid, Addr branch_addr, bool taken,
     unsigned global_predictor_idx =
             history->globalHistory & globalHistoryMask;
     if (taken) {
-          globalCtrs[global_predictor_idx].increment();
+          globalCtrs[PHT_index][global_predictor_idx].increment();
           if (old_local_pred_valid) {
-                 localCtrs[old_local_pred_index].increment();
+                 localCtrs[PHT_index][old_local_pred_index].increment();
           }
     } else {
-          globalCtrs[global_predictor_idx].decrement();
+          globalCtrs[PHT_index][global_predictor_idx].decrement();
           if (old_local_pred_valid) {
-              localCtrs[old_local_pred_index].decrement();
+              localCtrs[PHT_index][old_local_pred_index].decrement();
           }
     }
 
