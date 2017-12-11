@@ -64,7 +64,7 @@ TournamentBP::TournamentBP(const TournamentBPParams *params)
       choicePredictorSize(params->choicePredictorSize),
       choiceCtrBits(params->choiceCtrBits)
 {
-    ifstream proFile;
+    std::ifstream proFile;
     bool profileExists = true;
     proFile.open(PROFILE_NAME);
     if(proFile.fail()){
@@ -93,7 +93,7 @@ TournamentBP::TournamentBP(const TournamentBPParams *params)
     if(profileExists == true){
         for(int i = 0; i < 8; ++i){
             for(int j = 0; j < 8; ++j){
-                uint8_t temp = 0;
+                char temp = 0;
                 proFile.read(&temp, 1);
                 localCtrs[i][j].setCounter(temp);
             }
@@ -126,7 +126,7 @@ TournamentBP::TournamentBP(const TournamentBPParams *params)
     if(profileExists == true){
         for(int i = 0; i < 8; ++i){
             for(int j = 0; j < 8; ++j){
-                uint8_t temp = 0;
+                char temp = 0;
                 proFile.read(&temp, 1);
                 globalCtrs[i][j].setCounter(temp);
             }
@@ -159,7 +159,7 @@ TournamentBP::TournamentBP(const TournamentBPParams *params)
     if(profileExists == true){
         for(int i = 0; i < 8; ++i){
             for(int j = 0; j < 8; ++j){
-                uint8_t temp = 0;
+                char temp = 0;
                 proFile.read(&temp, 1);
                 globalCtrs[i][j].setCounter(temp);
             }
@@ -393,7 +393,24 @@ TournamentBP::update(ThreadID tid, Addr branch_addr, bool taken,
               localCtrs[PHT_index][old_local_pred_index].decrement();
           }
     }
-
+    std::ofstream outputFile;
+    outputFile.open(PROFILE_NAME);
+    for(int i = 0; i < 8; ++i){
+        for( int j = 0; j < localCtrs[i].size(); ++j){
+            outputFile << localCtrs[i][j].read();
+        }
+    }
+    for(int i = 0; i < 8; ++i){
+        for( int j = 0; j < localCtrs[i].size(); ++j){
+            outputFile << globalCtrs[i][j].read();
+        }
+    }
+    for(int i = 0; i < 8; ++i){
+        for( int j = 0; j < localCtrs[i].size(); ++j){
+            outputFile << choiceCtrs[i][j].read();
+        }
+    }
+    outputFile.close();
     // We're done with this history, now delete it.
     delete history;
 }

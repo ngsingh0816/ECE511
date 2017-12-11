@@ -46,8 +46,8 @@
 #define __CPU_PRED_TOURNAMENT_PRED_HH__
 
 #include <vector>
-#include <ofstream>
-#include <ifstream>
+#include <fstream>
+#include <iostream>
 
 #include "base/types.hh"
 #include "cpu/pred/bpred_unit.hh"
@@ -208,7 +208,7 @@ class TournamentBP : public BPredUnit
     /** Global history register. Contains as much history as specified by
      *  globalHistoryBits. Actual number of bits used is determined by
      *  globalHistoryMask and choiceHistoryMask. */
-    std::vector<unsigned> globalHistory[8];
+    std::vector<unsigned> globalHistory;
 
     /** Number of bits for the global history. Determines maximum number of
         entries in global and choice predictor tables. */
