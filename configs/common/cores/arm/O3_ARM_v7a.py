@@ -92,7 +92,10 @@ class O3_ARM_v7a_FUP(FUPool):
               O3_ARM_v7a_Load(), O3_ARM_v7a_Store(), O3_ARM_v7a_FP()]
 
 # Bi-Mode Branch Predictor
-class O3_ARM_v7a_BP(BiModeBP):
+class O3_ARM_v7a_BP(TournamentBP):
+    localPredictorSize = 2048
+    localCtrBits = 2
+    localHistoryTableSize = 2048
     globalPredictorSize = 8192
     globalCtrBits = 2
     choicePredictorSize = 8192
