@@ -45,6 +45,8 @@
 #include "base/bitfield.hh"
 #include "base/intmath.hh"
 
+#define PROFILE_NAME "profiles.prof"
+
 TournamentBP::TournamentBP(const TournamentBPParams *params)
     : BPredUnit(params),
       localPredictorSize(params->localPredictorSize),
@@ -62,6 +64,13 @@ TournamentBP::TournamentBP(const TournamentBPParams *params)
       choicePredictorSize(params->choicePredictorSize),
       choiceCtrBits(params->choiceCtrBits)
 {
+    ifstream proFile;
+    bool profileExists = true;
+    proFile.open(PROFILE_NAME);
+    if(proFile.fail()){
+        profileExists = false;
+    }
+    
     if (!isPowerOf2(localPredictorSize)) {
         fatal("Invalid local predictor size!\n");
     }
@@ -69,15 +78,27 @@ TournamentBP::TournamentBP(const TournamentBPParams *params)
     if (!isPowerOf2(globalPredictorSize)) {
         fatal("Invalid global predictor size!\n");
     }
-
+    
     //Set up the array of counters for the local predictor
 	for(int i = 0; i < 8; i++)
 	{
 		localCtrs[i].resize(localPredictorSize);
 	}
 
-    for (int i = 0; i < localPredictorSize; ++i)
-        localCtrs[i].setBits(localCtrBits);
+    for(int i = 0; i < 8; ++i){
+        for(int j = 0; j < localPredictorSize; ++j){
+            localCtrs[i][j].setBits(localCtrBits);
+        }
+    }
+    if(profileExists == true){
+        for(int i = 0; i < 8; ++i){
+            for(int j = 0; j < 8; ++j){
+                uint8_t temp = 0;
+                proFile.read(&temp, 1);
+                localCtrs[i][j].setCounter(temp);
+            }
+        }
+    }
 
     localPredictorMask = mask(localHistoryBits);
 
@@ -87,18 +108,30 @@ TournamentBP::TournamentBP(const TournamentBPParams *params)
 
     //Setup the history table for the local table
     localHistoryTable.resize(localHistoryTableSize);
-
-    for (int i = 0; i < localHistoryTableSize; ++i)
+    for (int i = 0; i < localHistoryTableSize; ++i){
         localHistoryTable[i] = 0;
-
+    }
+    
     //Setup the array of counters for the global predictor
 	for(int i = 0 ; i < 8; i++)
 	{
 		globalCtrs[i].resize(globalPredictorSize);
 	}
-
-    for (int i = 0; i < globalPredictorSize; ++i)
-        globalCtrs[i].setBits(globalCtrBits);
+    
+    for (int i = 0; i < 8; ++i){
+        for(int j = 0; j < globalPredictorSize; ++j){
+            globalCtrs[i][j].setBits(globalCtrBits);
+        }
+    }
+    if(profileExists == true){
+        for(int i = 0; i < 8; ++i){
+            for(int j = 0; j < 8; ++j){
+                uint8_t temp = 0;
+                proFile.read(&temp, 1);
+                globalCtrs[i][j].setCounter(temp);
+            }
+        }
+    }
 
     // Set up the global history mask
     // this is equivalent to mask(log2(globalPredictorSize)
@@ -117,9 +150,21 @@ TournamentBP::TournamentBP(const TournamentBPParams *params)
 	{
 		choiceCtrs[i].resize(choicePredictorSize);
 	}
-
-    for (int i = 0; i < choicePredictorSize; ++i)
-        choiceCtrs[i].setBits(choiceCtrBits);
+    
+    for (int i = 0; i < 8; ++i){
+        for(int j = 0; j < choicePredictorSize; ++j){
+            choiceCtrs[i][j].setBits(choiceCtrBits);
+        }
+    }
+    if(profileExists == true){
+        for(int i = 0; i < 8; ++i){
+            for(int j = 0; j < 8; ++j){
+                uint8_t temp = 0;
+                proFile.read(&temp, 1);
+                globalCtrs[i][j].setCounter(temp);
+            }
+        }
+    }
 
     //Set up historyRegisterMask
     historyRegisterMask = mask(globalHistoryBits);

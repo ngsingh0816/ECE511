@@ -80,6 +80,15 @@ class SatCounter
      */
     void setBits(unsigned bits) { maxVal = (1 << bits) - 1; }
 
+    /**
+     * Sets the counter value
+     */
+    void setCounter( uint8_t counterVal ){
+        if(counterVal < maxVal){
+            counter = counterVal;
+        }
+    }
+
     void reset() { counter = initialVal; }
 
     /**
