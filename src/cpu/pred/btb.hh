@@ -31,6 +31,8 @@
 #ifndef __CPU_PRED_BTB_HH__
 #define __CPU_PRED_BTB_HH__
 
+#include <vector>
+
 #include "arch/types.hh"
 #include "base/misc.hh"
 #include "base/types.hh"
@@ -68,6 +70,7 @@ class DefaultBTB
     DefaultBTB(unsigned numEntries, unsigned tagBits,
                unsigned instShiftAmt, unsigned numThreads);
 
+    void saveProfile();
     void reset();
 
     /** Looks up an address in the BTB. Must call valid() first on the address.

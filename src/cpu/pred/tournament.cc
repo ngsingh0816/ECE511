@@ -43,6 +43,7 @@
 #include "cpu/pred/tournament.hh"
 
 #include "base/bitfield.hh"
+#include "base/callback.hh"
 #include "base/intmath.hh"
 
 #define PROFILE_NAME "profiles.prof"
@@ -64,13 +65,11 @@ TournamentBP::TournamentBP(const TournamentBPParams *params)
       choicePredictorSize(params->choicePredictorSize),
       choiceCtrBits(params->choiceCtrBits)
 {
-    std::ifstream proFile;
     bool profileExists = true;
-    proFile.open(PROFILE_NAME);
-    if(proFile.fail()){
+    FILE* proFile = fopen(PROFILE_NAME, "r");
+    if (!proFile)
         profileExists = false;
-    }
-    
+
     if (!isPowerOf2(localPredictorSize)) {
         fatal("Invalid local predictor size!\n");
     }
@@ -80,21 +79,21 @@ TournamentBP::TournamentBP(const TournamentBPParams *params)
     }
     
     //Set up the array of counters for the local predictor
-	for(int i = 0; i < 8; i++)
-	{
-		localCtrs[i].resize(localPredictorSize);
-	}
+    for (int i = 0; i < 8; i++)
+    {
+        localCtrs[i].resize(localPredictorSize);
+    }
 
-    for(int i = 0; i < 8; ++i){
-        for(int j = 0; j < localPredictorSize; ++j){
+    for (int i = 0; i < 8; ++i) {
+        for (int j = 0; j < localPredictorSize; ++j) {
             localCtrs[i][j].setBits(localCtrBits);
         }
     }
-    if(profileExists == true){
-        for(int i = 0; i < 8; ++i){
-            for(int j = 0; j < 8; ++j){
+    if (profileExists) {
+        for (int i = 0; i < 8; ++i) {
+            for (int j = 0; j < localPredictorSize; ++j) {
                 char temp = 0;
-                proFile.read(&temp, 1);
+                fread(&temp, 1, 1, proFile);
                 localCtrs[i][j].setCounter(temp);
             }
         }
@@ -108,26 +107,26 @@ TournamentBP::TournamentBP(const TournamentBPParams *params)
 
     //Setup the history table for the local table
     localHistoryTable.resize(localHistoryTableSize);
-    for (int i = 0; i < localHistoryTableSize; ++i){
+    for (int i = 0; i < localHistoryTableSize; ++i) {
         localHistoryTable[i] = 0;
     }
-    
+
     //Setup the array of counters for the global predictor
-	for(int i = 0 ; i < 8; i++)
-	{
-		globalCtrs[i].resize(globalPredictorSize);
-	}
-    
-    for (int i = 0; i < 8; ++i){
-        for(int j = 0; j < globalPredictorSize; ++j){
+    for (int i = 0 ; i < 8; i++)
+    {
+        globalCtrs[i].resize(globalPredictorSize);
+    }
+
+    for (int i = 0; i < 8; ++i) {
+        for (int j = 0; j < globalPredictorSize; ++j) {
             globalCtrs[i][j].setBits(globalCtrBits);
         }
     }
-    if(profileExists == true){
-        for(int i = 0; i < 8; ++i){
-            for(int j = 0; j < 8; ++j){
+    if (profileExists) {
+        for (int i = 0; i < 8; ++i) {
+            for (int j = 0; j < globalPredictorSize; ++j) {
                 char temp = 0;
-                proFile.read(&temp, 1);
+                fread(&temp, 1, 1, proFile);
                 globalCtrs[i][j].setCounter(temp);
             }
         }
@@ -146,25 +145,28 @@ TournamentBP::TournamentBP(const TournamentBPParams *params)
     choiceHistoryMask = choicePredictorSize - 1;
 
     //Setup the array of counters for the choice predictor
-	for(int i = 0; i < 8; i++)
-	{
-		choiceCtrs[i].resize(choicePredictorSize);
-	}
-    
+    for (int i = 0; i < 8; i++)
+    {
+        choiceCtrs[i].resize(choicePredictorSize);
+    }
+
     for (int i = 0; i < 8; ++i){
         for(int j = 0; j < choicePredictorSize; ++j){
             choiceCtrs[i][j].setBits(choiceCtrBits);
         }
     }
-    if(profileExists == true){
-        for(int i = 0; i < 8; ++i){
-            for(int j = 0; j < 8; ++j){
+    if (profileExists) {
+        for (int i = 0; i < 8; ++i) {
+            for (int j = 0; j < choicePredictorSize; ++j) {
                 char temp = 0;
-                proFile.read(&temp, 1);
+                fread(&temp, 1, 1, proFile);
                 globalCtrs[i][j].setCounter(temp);
             }
         }
     }
+
+    if (profileExists)
+        fclose(proFile);
 
     //Set up historyRegisterMask
     historyRegisterMask = mask(globalHistoryBits);
@@ -187,6 +189,36 @@ TournamentBP::TournamentBP(const TournamentBPParams *params)
     localThreshold  = (ULL(1) << (localCtrBits  - 1)) - 1;
     globalThreshold = (ULL(1) << (globalCtrBits - 1)) - 1;
     choiceThreshold = (ULL(1) << (choiceCtrBits - 1)) - 1;
+
+    Callback* cb = new MakeCallback<TournamentBP,
+        &TournamentBP::saveProfile>(this);
+    registerExitCallback(cb);
+}
+
+void TournamentBP::saveProfile() {
+    // Save output
+    FILE* file = fopen(PROFILE_NAME, "w");
+    if (file) {
+        for (int i = 0; i < 8; ++i) {
+            for (int j = 0; j < localCtrs[i].size(); ++j) {
+                char val = localCtrs[i][j].read();
+                fwrite(&val, 1, 1, file);
+            }
+        }
+        for (int i = 0; i < 8; ++i) {
+            for (int j = 0; j < globalCtrs[i].size(); ++j) {
+                char val = globalCtrs[i][j].read();
+                fwrite(&val, 1, 1, file);
+            }
+        }
+        for (int i = 0; i < 8; ++i) {
+            for (int j = 0; j < choiceCtrs[i].size(); ++j) {
+                char val = choiceCtrs[i][j].read();
+                fwrite(&val, 1, 1, file);
+            }
+        }
+        fclose(file);
+    }
 }
 
 inline
@@ -393,24 +425,7 @@ TournamentBP::update(ThreadID tid, Addr branch_addr, bool taken,
               localCtrs[PHT_index][old_local_pred_index].decrement();
           }
     }
-    std::ofstream outputFile;
-    outputFile.open(PROFILE_NAME);
-    for(int i = 0; i < 8; ++i){
-        for( int j = 0; j < localCtrs[i].size(); ++j){
-            outputFile << localCtrs[i][j].read();
-        }
-    }
-    for(int i = 0; i < 8; ++i){
-        for( int j = 0; j < localCtrs[i].size(); ++j){
-            outputFile << globalCtrs[i][j].read();
-        }
-    }
-    for(int i = 0; i < 8; ++i){
-        for( int j = 0; j < localCtrs[i].size(); ++j){
-            outputFile << choiceCtrs[i][j].read();
-        }
-    }
-    outputFile.close();
+
     // We're done with this history, now delete it.
     delete history;
 }

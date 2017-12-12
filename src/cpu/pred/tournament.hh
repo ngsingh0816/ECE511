@@ -45,9 +45,8 @@
 #ifndef __CPU_PRED_TOURNAMENT_PRED_HH__
 #define __CPU_PRED_TOURNAMENT_PRED_HH__
 
+#include <cstdio>
 #include <vector>
-#include <fstream>
-#include <iostream>
 
 #include "base/types.hh"
 #include "cpu/pred/bpred_unit.hh"
@@ -115,6 +114,8 @@ class TournamentBP : public BPredUnit
     void squash(ThreadID tid, void *bp_history);
 
     unsigned getGHR(ThreadID tid, void *bp_history) const;
+
+    void saveProfile();
 
   private:
     /**

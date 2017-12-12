@@ -30,9 +30,14 @@
 
 #include "cpu/pred/btb.hh"
 
+#include <cstdio>
+
+#include "base/callback.hh"
 #include "base/intmath.hh"
 #include "base/trace.hh"
 #include "debug/Fetch.hh"
+
+#define PROFILE_NAME "btb.prof"
 
 DefaultBTB::DefaultBTB(unsigned _numEntries,
                        unsigned _tagBits,
@@ -60,6 +65,29 @@ DefaultBTB::DefaultBTB(unsigned _numEntries,
     tagMask = (1 << tagBits) - 1;
 
     tagShiftAmt = instShiftAmt + floorLog2(numEntries);
+
+    FILE* file = fopen(PROFILE_NAME, "r");
+    if (file) {
+        for (unsigned i = 0; i < numEntries; ++i) {
+            fread(&btb[i], 1, sizeof(BTBEntry), file);
+        }
+        fclose(file);
+    }
+
+    Callback* cb = new MakeCallback<DefaultBTB,
+        &DefaultBTB::saveProfile>(this);
+    registerExitCallback(cb);
+}
+
+void
+DefaultBTB::saveProfile() {
+    FILE* file = fopen(PROFILE_NAME, "w");
+    if (file) {
+        for (unsigned i = 0; i < numEntries; ++i) {
+            fwrite(&btb[i], 1, sizeof(BTBEntry), file);
+        }
+        fclose(file);
+    }
 }
 
 void
